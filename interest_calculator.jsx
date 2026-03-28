@@ -214,6 +214,7 @@ const SITE_TEXT = {
     endDatePlaceholder: 'e.g. 25-3 or 25-3-2025',
     differentReturnDates: 'Different end dates',
     usingRowReturnDates: 'Using row-wise end dates from the entries table below.',
+    invalidDate: 'Invalid date',
     entries: 'Entries',
     entriesInfoLabel: 'About entries',
     entriesInfoText:
@@ -1286,6 +1287,36 @@ export default function InterestCalculator() {
     };
   };
 
+  const isDateInputValid = (dateStr, role = 'standalone', relatedDate = '') => {
+    if (!dateStr?.trim()) {
+      return true;
+    }
+
+    const dateParts = parseDateParts(dateStr);
+    if (!dateParts) {
+      return false;
+    }
+
+    let fallbackYear = getDefaultYear();
+    const relatedDateParts = parseDateParts(relatedDate);
+
+    if (dateParts.year != null) {
+      fallbackYear = dateParts.year;
+    } else if (relatedDateParts?.year != null) {
+      fallbackYear = relatedDateParts.year;
+
+      if (role === 'start' && compareMonthDay(dateParts, relatedDateParts) > 0) {
+        fallbackYear -= 1;
+      }
+
+      if (role === 'end' && compareMonthDay(dateParts, relatedDateParts) < 0) {
+        fallbackYear += 1;
+      }
+    }
+
+    return Boolean(buildValidatedDate(dateParts, fallbackYear));
+  };
+
   const calculateDays = (startDate, finalDate) => {
     const { start, end } = resolveDateRange(startDate, finalDate);
 
@@ -1640,6 +1671,12 @@ export default function InterestCalculator() {
 
   const statementTitleDate = useEntryEndDates ? '' : formatStatementEndDate(endDate);
   const resolvedThemeLabel = resolvedTheme === 'dark' ? siteText.dark : siteText.light;
+  const invalidDateLabel =
+    siteText.invalidDate ?? (siteLanguage === 'te' ? 'చెల్లని తేదీ' : 'Invalid date');
+  const globalEndDateError =
+    !useEntryEndDates && endDate.trim() && !isDateInputValid(endDate)
+      ? invalidDateLabel
+      : '';
   const statementLabels =
     STATEMENT_LABELS[normalizeStatementLanguage(statementLanguage)];
   const statementTitle = statementTitleDate
@@ -2362,14 +2399,19 @@ export default function InterestCalculator() {
                   {rowEndDateText.note}
                 </p>
               ) : (
-                <input
-                  id="end-date"
-                  type="text"
-                  value={endDate}
-                  onChange={(event) => setEndDate(event.target.value)}
-                  placeholder={siteText.endDatePlaceholder}
-                  className="text-input date-input"
-                />
+                <div className="field-input-stack">
+                  <input
+                    id="end-date"
+                    type="text"
+                    value={endDate}
+                    onChange={(event) => setEndDate(event.target.value)}
+                    placeholder={siteText.endDatePlaceholder}
+                    className={`text-input date-input ${globalEndDateError ? 'is-invalid' : ''}`}
+                  />
+                  {globalEndDateError && (
+                    <p className="field-inline-message warning-text">{globalEndDateError}</p>
+                  )}
+                </div>
               )}
             </section>
 
@@ -2452,31 +2494,60 @@ export default function InterestCalculator() {
                   <tbody>
                     {entries.map((entry) => {
                       const calc = entryCalculationsById.get(entry.id) || {};
+                      const rowDateError =
+                        entry.date.trim() &&
+                        !isDateInputValid(
+                          entry.date,
+                          'start',
+                          useEntryEndDates ? entry.endDate : endDate
+                        )
+                          ? invalidDateLabel
+                          : '';
+                      const rowEndDateError =
+                        useEntryEndDates &&
+                        entry.endDate.trim() &&
+                        !isDateInputValid(entry.endDate, 'end', entry.date)
+                          ? invalidDateLabel
+                          : '';
 
                       return (
                         <tr key={entry.id}>
                           <td>
-                            <input
-                              type="text"
-                              value={entry.date}
-                              onChange={(event) =>
-                                updateEntry(entry.id, 'date', event.target.value)
-                              }
-                              placeholder="DD-MM"
-                              className="table-input"
-                            />
+                            <div className="table-input-stack">
+                              <input
+                                type="text"
+                                value={entry.date}
+                                onChange={(event) =>
+                                  updateEntry(entry.id, 'date', event.target.value)
+                                }
+                                placeholder="DD-MM"
+                                className={`table-input ${rowDateError ? 'is-invalid' : ''}`}
+                              />
+                              {rowDateError && (
+                                <span className="field-inline-message warning-text">
+                                  {rowDateError}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           {useEntryEndDates && (
                             <td>
-                              <input
-                                type="text"
-                                value={entry.endDate}
-                                onChange={(event) =>
-                                  updateEntry(entry.id, 'endDate', event.target.value)
-                                }
-                                placeholder="DD-MM"
-                                className="table-input"
-                              />
+                              <div className="table-input-stack">
+                                <input
+                                  type="text"
+                                  value={entry.endDate}
+                                  onChange={(event) =>
+                                    updateEntry(entry.id, 'endDate', event.target.value)
+                                  }
+                                  placeholder="DD-MM"
+                                  className={`table-input ${rowEndDateError ? 'is-invalid' : ''}`}
+                                />
+                                {rowEndDateError && (
+                                  <span className="field-inline-message warning-text">
+                                    {rowEndDateError}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                           )}
                           <td>

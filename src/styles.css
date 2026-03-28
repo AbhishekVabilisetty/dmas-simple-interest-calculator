@@ -610,8 +610,27 @@ button {
   border-color: var(--field-focus);
 }
 
+.text-input.is-invalid,
+.table-input.is-invalid {
+  border-color: var(--warning-plain);
+}
+
 .date-input {
   max-width: 240px;
+}
+
+.field-input-stack,
+.table-input-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-inline-message {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  font-weight: 600;
 }
 
 .end-date-header {
