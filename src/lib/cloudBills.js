@@ -2,18 +2,37 @@ import { getSupabaseClient, getSupabaseRedirectUrl } from './supabase';
 
 const BILLS_TABLE = 'bills';
 
-const normalizeBillRecord = (record) => ({
-  id: record.id,
-  name: record.name ?? '',
-  entries: Array.isArray(record.entries) ? record.entries : [],
-  endDate: record.end_date ?? '',
-  roundingAdjustment: Number(record.rounding_adjustment) || 0,
-  billRuleMode: record.bill_rule_mode === 'custom' ? 'custom' : 'global',
-  billCalcRules: record.bill_calc_rules ?? null,
-  statementLanguage: record.statement_language === 'en' ? 'en' : 'te',
-  createdAt: record.created_at ?? null,
-  updatedAt: record.updated_at ?? null
-});
+const normalizeBillRecord = (record) => {
+  const entries = Array.isArray(record.entries)
+    ? record.entries.map((entry, index) => ({
+        id: entry?.id ?? `entry-${index}`,
+        date: entry?.date ?? '',
+        endDate: entry?.endDate ?? entry?.returnDate ?? '',
+        amount: entry?.amount ?? '',
+        days: entry?.days ?? '',
+        daily: entry?.daily ?? ''
+      }))
+    : [];
+
+  return {
+    id: record.id,
+    name: record.name ?? '',
+    entries,
+    endDate: record.end_date ?? '',
+    useEntryEndDates:
+      typeof record.use_entry_return_dates === 'boolean'
+        ? record.use_entry_return_dates
+        : entries.some(
+            (entry) => (entry?.endDate ?? entry?.returnDate ?? '').trim()
+          ),
+    roundingAdjustment: Number(record.rounding_adjustment) || 0,
+    billRuleMode: record.bill_rule_mode === 'custom' ? 'custom' : 'global',
+    billCalcRules: record.bill_calc_rules ?? null,
+    statementLanguage: record.statement_language === 'en' ? 'en' : 'te',
+    createdAt: record.created_at ?? null,
+    updatedAt: record.updated_at ?? null
+  };
+};
 
 const serializeBillRecord = (userId, bill) => ({
   id: bill.id,
@@ -21,6 +40,7 @@ const serializeBillRecord = (userId, bill) => ({
   name: bill.name ?? '',
   entries: Array.isArray(bill.entries) ? bill.entries : [],
   end_date: bill.endDate ?? '',
+  use_entry_return_dates: Boolean(bill.useEntryEndDates),
   rounding_adjustment: Number(bill.roundingAdjustment) || 0,
   bill_rule_mode: bill.billRuleMode === 'custom' ? 'custom' : 'global',
   bill_calc_rules:

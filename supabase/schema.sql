@@ -6,6 +6,7 @@ create table if not exists public.bills (
   name text not null,
   entries jsonb not null default '[]'::jsonb,
   end_date text not null default '',
+  use_entry_return_dates boolean not null default false,
   rounding_adjustment numeric not null default 0,
   bill_rule_mode text not null default 'global',
   bill_calc_rules jsonb,
@@ -16,6 +17,17 @@ create table if not exists public.bills (
     check (bill_rule_mode in ('global', 'custom')),
   constraint bills_statement_language_check
     check (statement_language in ('en', 'te'))
+);
+
+alter table public.bills
+  add column if not exists use_entry_return_dates boolean not null default false;
+
+update public.bills
+set use_entry_return_dates = true
+where exists (
+  select 1
+  from jsonb_array_elements(entries) as entry
+  where coalesce(entry ->> 'endDate', entry ->> 'returnDate', '') <> ''
 );
 
 create index if not exists bills_user_updated_idx

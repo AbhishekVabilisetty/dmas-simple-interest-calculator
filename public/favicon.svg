@@ -5,19 +5,21 @@
   viewBox="0 0 64 64"
   fill="none"
 >
-  <circle cx="32" cy="32" r="28" fill="#F7FBFF" />
-  <circle cx="32" cy="32" r="27" stroke="#C8D8EA" stroke-width="2" />
-  <circle cx="32" cy="32" r="23" fill="#EEF5FB" />
+  <circle cx="32" cy="32" r="26" fill="#ffffff" />
+  <circle cx="32" cy="32" r="25" stroke="#d9e2ec" stroke-width="1.8" />
 
   <g
-    fill="#111111"
-    font-family="'Times New Roman', Georgia, serif"
+    font-family="Georgia, 'Times New Roman', serif"
     font-weight="700"
     text-anchor="middle"
+    stroke="#0f172a"
+    stroke-opacity="0.12"
+    stroke-width="0.8"
+    paint-order="stroke fill"
   >
-    <text x="32" y="20" font-size="14">&#247;</text>
-    <text x="32" y="30" font-size="14">&#215;</text>
-    <text x="32" y="40" font-size="14">+</text>
-    <text x="32" y="50" font-size="15">&#8722;</text>
+    <text x="32" y="20" font-size="17" fill="#15803d">&#247;</text>
+    <text x="32" y="31.5" font-size="17" fill="#1d4ed8">&#215;</text>
+    <text x="32" y="43" font-size="17" fill="#a16207">+</text>
+    <text x="32" y="54.5" font-size="17" fill="#c2410c">&#8722;</text>
   </g>
 </svg>

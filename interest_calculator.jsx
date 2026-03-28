@@ -100,6 +100,63 @@ function MoneyStackLogo({ className = '' }) {
   );
 }
 
+function SidebarDmasLogo({ className = '' }) {
+  return (
+    <svg
+      viewBox="0 0 52 52"
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <text
+        x="26"
+        y="11"
+        className="dmas-symbol dmas-symbol-divide"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontSize="15"
+        fontWeight="700"
+        textAnchor="middle"
+      >
+        ÷
+      </text>
+      <text
+        x="26"
+        y="22"
+        className="dmas-symbol dmas-symbol-multiply"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontSize="15"
+        fontWeight="700"
+        textAnchor="middle"
+      >
+        ×
+      </text>
+      <text
+        x="26"
+        y="33"
+        className="dmas-symbol dmas-symbol-add"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontSize="15"
+        fontWeight="700"
+        textAnchor="middle"
+      >
+        +
+      </text>
+      <text
+        x="26"
+        y="44"
+        className="dmas-symbol dmas-symbol-subtract"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontSize="15"
+        fontWeight="700"
+        textAnchor="middle"
+      >
+        −
+      </text>
+    </svg>
+  );
+}
+
 const SITE_TEXT = {
   en: {
     english: 'English',
@@ -155,13 +212,16 @@ const SITE_TEXT = {
     saved: 'Saved',
     endDate: 'End Date (DD-MM or DD-MM-YYYY)',
     endDatePlaceholder: 'e.g. 25-3 or 25-3-2025',
+    differentReturnDates: 'Different end dates',
+    usingRowReturnDates: 'Using row-wise end dates from the entries table below.',
     entries: 'Entries',
     entriesInfoLabel: 'About entries',
     entriesInfoText:
-      'Date is the start date. Amount is in units. Daily is the daily value for that row. Days is the total days used. Daily x Days gives the row interest.',
+      'Date is the start date. End Date is the row-wise closing date when different end dates are enabled. Amount is in units. Daily is the daily value for that row. Days is the total days used. Daily x Days gives the row interest.',
     editValue: 'Edit',
     addEntry: 'Add Entry',
     date: 'Date',
+    returnDate: 'End Date',
     amountUnits: 'Amount (Units)',
     dailyTimesDays: 'Daily x Days',
     removeEntry: 'Remove entry',
@@ -282,6 +342,23 @@ const SITE_TEXT = {
       'కొత్త బిల్లు ప్రారంభించాలా? ప్రస్తుత బిల్లులో సేవ్ చేయని మార్పులు పోతాయి.',
     deleteBillConfirm: (name) => `"${name}" బిల్లును తొలగించాలా?`,
     billPrefix: 'బిల్లు'
+  }
+};
+
+const ROW_END_DATE_TEXT = {
+  en: {
+    toggleLabel: 'Different end dates',
+    note: 'Using row-wise end dates from the entries table below.',
+    columnLabel: 'End Date',
+    entriesInfoText:
+      'Date is the start date. End Date is the row-wise closing date when different end dates are enabled. Amount is in units. Daily is the daily value for that row. Days is the total days used. Daily x Days gives the row interest.'
+  },
+  te: {
+    toggleLabel: 'వేర్వేరు ముగింపు తేదీలు',
+    note: 'క్రింది ఎంట్రీల పట్టికలో ప్రతి వరుసకు ముగింపు తేదీ వాడబడుతుంది.',
+    columnLabel: 'ముగింపు తేదీ',
+    entriesInfoText:
+      'తేదీ అంటే ప్రారంభ తేదీ. ముగింపు తేదీ కాలమ్ ఆన్ చేస్తే ప్రతి వరుసకు చివరి తేదీ పెట్టవచ్చు. మొత్తం యూనిట్లలో ఉంటుంది. రోజువారీ అంటే ఆ వరుసకు రోజువారీ విలువ. రోజులు అంటే లెక్కలో తీసుకున్న మొత్తం రోజులు. రోజువారీ x రోజులు అంటే ఆ వరుస వడ్డీ.'
   }
 };
 
@@ -451,19 +528,32 @@ const createId = () => {
 const createEmptyEntry = () => ({
   id: createId(),
   date: '',
+  endDate: '',
   amount: '',
   days: '',
   daily: ''
 });
 
+const getEntryEndDate = (entry) => entry?.endDate ?? entry?.returnDate ?? '';
+
 const serializeEntries = (source) => {
   if (!Array.isArray(source) || source.length === 0) {
-    return [{ id: 'blank-entry', date: '', amount: '', days: '', daily: '' }];
+    return [
+      {
+        id: 'blank-entry',
+        date: '',
+        endDate: '',
+        amount: '',
+        days: '',
+        daily: ''
+      }
+    ];
   }
 
   return source.map((entry, index) => ({
     id: entry?.id ?? `entry-${index}`,
     date: entry?.date ?? '',
+    endDate: getEntryEndDate(entry),
     amount: entry?.amount ?? '',
     days: entry?.days ?? '',
     daily: entry?.daily ?? ''
@@ -478,10 +568,37 @@ const normalizeEntriesForState = (source) => {
   return source.map((entry) => ({
     id: entry?.id ?? createId(),
     date: entry?.date ?? '',
+    endDate: getEntryEndDate(entry),
     amount: entry?.amount ?? '',
     days: entry?.days ?? '',
     daily: entry?.daily ?? ''
   }));
+};
+
+const hasEntryEndDates = (entries) =>
+  Array.isArray(entries) &&
+  entries.some((entry) => getEntryEndDate(entry).trim());
+
+const getBillUseEntryEndDates = (bill) => {
+  if (typeof bill?.useEntryEndDates === 'boolean') {
+    return bill.useEntryEndDates;
+  }
+
+  if (typeof bill?.useEntryReturnDates === 'boolean') {
+    return bill.useEntryReturnDates;
+  }
+
+  return hasEntryEndDates(bill?.entries ?? []);
+};
+
+const normalizeBillRecord = (bill) => {
+  const { useEntryReturnDates, ...nextBill } = bill ?? {};
+
+  return {
+    ...nextBill,
+    entries: serializeEntries(bill?.entries),
+    useEntryEndDates: getBillUseEntryEndDates(bill)
+  };
 };
 
 const sortBills = (bills) =>
@@ -503,7 +620,9 @@ const getLocalSavedBills = () => {
     }
 
     const parsedBills = JSON.parse(rawBills);
-    return Array.isArray(parsedBills) ? sortBills(parsedBills) : [];
+    return Array.isArray(parsedBills)
+      ? sortBills(parsedBills.map(normalizeBillRecord))
+      : [];
   } catch (error) {
     console.error('Unable to load saved bills:', error);
     return [];
@@ -516,7 +635,10 @@ const setLocalSavedBills = (bills) => {
   }
 
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sortBills(bills)));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(sortBills(bills).map(normalizeBillRecord))
+    );
   } catch (error) {
     console.error('Unable to save bills locally:', error);
   }
@@ -553,6 +675,7 @@ const buildDraftSnapshot = ({
   billName,
   entries,
   endDate,
+  useEntryEndDates,
   roundingAdjustment,
   billRuleMode,
   billCalcRules,
@@ -560,6 +683,7 @@ const buildDraftSnapshot = ({
 }) => ({
   name: billName.trim(),
   endDate,
+  useEntryEndDates,
   roundingAdjustment,
   entries: serializeEntries(entries),
   billRuleMode,
@@ -569,6 +693,7 @@ const buildDraftSnapshot = ({
 
 const isEntryBlank = (entry) =>
   !entry.date?.trim() &&
+  !getEntryEndDate(entry).trim() &&
   !entry.amount?.toString().trim() &&
   !entry.days?.toString().trim() &&
   !entry.daily?.toString().trim();
@@ -606,6 +731,7 @@ export default function InterestCalculator() {
   const [savedBills, setSavedBills] = useState([]);
   const [entries, setEntries] = useState([createEmptyEntry()]);
   const [endDate, setEndDate] = useState('');
+  const [useEntryEndDates, setUseEntryEndDates] = useState(false);
   const [roundingAdjustment, setRoundingAdjustment] = useState(0);
   const [storageReady, setStorageReady] = useState(false);
   const [cloudUser, setCloudUser] = useState(null);
@@ -613,6 +739,7 @@ export default function InterestCalculator() {
   const [cloudSyncState, setCloudSyncState] = useState(
     isSupabaseConfigured ? 'local' : 'disabled'
   );
+  const [isCloudPanelExpanded, setIsCloudPanelExpanded] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(getIsMobileViewport);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(getIsMobileViewport);
   const [themeMode, setThemeMode] = useState(getSavedThemeMode);
@@ -638,8 +765,11 @@ export default function InterestCalculator() {
   const statementSheetRef = useRef(null);
   const statementImageCopyTimeoutRef = useRef(null);
   const editorOpenTimeoutRef = useRef(null);
-  const siteText = SITE_TEXT[normalizeSiteLanguage(siteLanguage)];
-  const cloudText = CLOUD_TEXT[normalizeSiteLanguage(siteLanguage)];
+  const normalizedSiteLanguage = normalizeSiteLanguage(siteLanguage);
+  const siteText = SITE_TEXT[normalizedSiteLanguage];
+  const rowEndDateText = ROW_END_DATE_TEXT[normalizedSiteLanguage];
+  const entriesInfoText = rowEndDateText.entriesInfoText;
+  const cloudText = CLOUD_TEXT[normalizedSiteLanguage];
 
   const syncBillsToCloud = async (nextBills, options = {}) => {
     if (!isSupabaseConfigured || !cloudUser?.id) {
@@ -900,6 +1030,10 @@ export default function InterestCalculator() {
   }, [isSidebarCollapsed]);
 
   useEffect(() => {
+    setIsCloudPanelExpanded(false);
+  }, [cloudUser]);
+
+  useEffect(() => {
     if (typeof document === 'undefined') {
       return;
     }
@@ -933,6 +1067,7 @@ export default function InterestCalculator() {
     setBillName('');
     setEntries([createEmptyEntry()]);
     setEndDate('');
+    setUseEntryEndDates(false);
     setRoundingAdjustment(0);
     setBillRuleMode('global');
     setBillCalcRules(globalCalcRules);
@@ -950,12 +1085,21 @@ export default function InterestCalculator() {
     return (
       !billName.trim() &&
       !endDate.trim() &&
+      !useEntryEndDates &&
       Number(roundingAdjustment) === 0 &&
       entries.every(isEntryBlank) &&
       billRuleMode === 'global' &&
       statementLanguage === DEFAULT_STATEMENT_LANGUAGE
     );
-  }, [billName, endDate, roundingAdjustment, entries, billRuleMode, statementLanguage]);
+  }, [
+    billName,
+    endDate,
+    useEntryEndDates,
+    roundingAdjustment,
+    entries,
+    billRuleMode,
+    statementLanguage
+  ]);
 
   const hasUnsavedChanges = useMemo(() => {
     if (!activeSavedBill) {
@@ -967,6 +1111,7 @@ export default function InterestCalculator() {
         billName,
         entries,
         endDate,
+        useEntryEndDates,
         roundingAdjustment,
         billRuleMode,
         billCalcRules,
@@ -979,6 +1124,7 @@ export default function InterestCalculator() {
         billName: activeSavedBill.name ?? '',
         entries: activeSavedBill.entries ?? [],
         endDate: activeSavedBill.endDate ?? '',
+        useEntryEndDates: getBillUseEntryEndDates(activeSavedBill),
         roundingAdjustment: activeSavedBill.roundingAdjustment ?? 0,
         billRuleMode: activeSavedBill.billRuleMode ?? 'global',
         billCalcRules:
@@ -995,6 +1141,7 @@ export default function InterestCalculator() {
     billName,
     entries,
     endDate,
+    useEntryEndDates,
     roundingAdjustment,
     isDraftEmpty,
     billRuleMode,
@@ -1015,7 +1162,21 @@ export default function InterestCalculator() {
     return new Date().getFullYear();
   };
 
-  const parseDate = (dateStr) => {
+  const getExplicitYear = (dateStr) => {
+    if (!dateStr) {
+      return null;
+    }
+
+    const parts = dateStr.split('-').map((part) => part.trim());
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    const parsedYear = Number.parseInt(parts[2], 10);
+    return Number.isNaN(parsedYear) ? null : parsedYear;
+  };
+
+  const parseDate = (dateStr, fallbackYear = getDefaultYear()) => {
     if (!dateStr) {
       return null;
     }
@@ -1031,7 +1192,7 @@ export default function InterestCalculator() {
         return null;
       }
 
-      return new Date(getDefaultYear(), parsedMonth - 1, parsedDay);
+      return new Date(fallbackYear, parsedMonth - 1, parsedDay);
     }
 
     if (parts.length === 3) {
@@ -1055,8 +1216,10 @@ export default function InterestCalculator() {
   };
 
   const calculateDays = (startDate, finalDate) => {
-    const start = parseDate(startDate);
-    const end = parseDate(finalDate);
+    const fallbackYear =
+      getExplicitYear(finalDate) ?? getExplicitYear(startDate) ?? getDefaultYear();
+    const start = parseDate(startDate, fallbackYear);
+    const end = parseDate(finalDate, fallbackYear);
 
     if (!start || !end) {
       return 0;
@@ -1079,9 +1242,12 @@ export default function InterestCalculator() {
 
     const rows = validEntries.map((entry) => {
       const amount = Number.parseFloat(entry.amount) || 0;
+      const resolvedEndDate = useEntryEndDates ? entry.endDate : endDate;
       const parsedDays = Number.parseFloat(entry.days);
       const hasDaysOverride = entry.days !== '' && !Number.isNaN(parsedDays);
-      const days = hasDaysOverride ? Math.max(0, parsedDays) : calculateDays(entry.date, endDate);
+      const days = hasDaysOverride
+        ? Math.max(0, parsedDays)
+        : calculateDays(entry.date, resolvedEndDate);
       const parsedDaily = Number.parseFloat(entry.daily);
       const hasDailyOverride = entry.daily !== '' && !Number.isNaN(parsedDaily);
       const dailyInterest = hasDailyOverride
@@ -1092,6 +1258,7 @@ export default function InterestCalculator() {
       return {
         ...entry,
         amount,
+        resolvedEndDate,
         days,
         dailyInterest,
         interest,
@@ -1116,7 +1283,7 @@ export default function InterestCalculator() {
       finalAmount,
       suggestedRounding
     };
-  }, [entries, endDate, roundingAdjustment, calcRules]);
+  }, [entries, endDate, useEntryEndDates, roundingAdjustment, calcRules]);
 
   const entryCalculationsById = new Map(
     calculations.rows.map((row) => [row.id, row])
@@ -1200,6 +1367,7 @@ export default function InterestCalculator() {
     setBillName(bill.name ?? '');
     setEntries(normalizeEntriesForState(bill.entries));
     setEndDate(bill.endDate ?? '');
+    setUseEntryEndDates(getBillUseEntryEndDates(bill));
     setRoundingAdjustment(Number(bill.roundingAdjustment) || 0);
     const nextBillRuleMode = bill.billRuleMode === 'custom' ? 'custom' : 'global';
     setBillRuleMode(nextBillRuleMode);
@@ -1223,6 +1391,7 @@ export default function InterestCalculator() {
       name: normalizedName,
       entries: serializeEntries(entries),
       endDate,
+      useEntryEndDates,
       roundingAdjustment,
       billRuleMode,
       billCalcRules:
@@ -1401,17 +1570,26 @@ export default function InterestCalculator() {
     return dateStr;
   };
 
-  const statementTitleDate = formatStatementEndDate(endDate);
+  const statementTitleDate = useEntryEndDates ? '' : formatStatementEndDate(endDate);
   const resolvedThemeLabel = resolvedTheme === 'dark' ? siteText.dark : siteText.light;
   const statementLabels =
     STATEMENT_LABELS[normalizeStatementLanguage(statementLanguage)];
   const statementTitle = statementTitleDate
     ? statementLabels.titleWithDate(statementTitleDate)
     : statementLabels.title;
+  const statementHasEndDateColumn = useEntryEndDates;
   const statementRows = calculations.rows.map((row, index) => ({
     ...row,
     serial: index + 1
   }));
+  const statementRowLines = statementRows.map((row) =>
+    statementHasEndDateColumn
+      ? `${row.serial}\t${row.date}\t${row.resolvedEndDate}\t${formatStatementNumber(row.amount)}\t${formatStatementNumber(row.dailyInterest)}x${row.days}\t${formatStatementNumber(row.interest)}`
+      : `${row.serial}\t${row.date}\t${formatStatementNumber(row.amount)}\t${formatStatementNumber(row.dailyInterest)}x${row.days}\t${formatStatementNumber(row.interest)}`
+  );
+  const statementTotalLine = statementHasEndDateColumn
+    ? `${statementLabels.total}\t\t\t${formatStatementNumber(calculations.totalUnits)}\t\t${formatStatementNumber(calculations.totalInterest)}`
+    : `${statementLabels.total}\t\t${formatStatementNumber(calculations.totalUnits)}\t\t${formatStatementNumber(calculations.totalInterest)}`;
 
   const statementText = [
     statementTitle,
@@ -1419,11 +1597,8 @@ export default function InterestCalculator() {
       ? [`${statementLabels.uptoDateLabel}: ${statementTitleDate}`]
       : []),
     '',
-    ...statementRows.map(
-      (row) =>
-        `${row.serial}\t${row.date}\t${formatStatementNumber(row.amount)}\t${formatStatementNumber(row.dailyInterest)}x${row.days}\t${formatStatementNumber(row.interest)}`
-    ),
-    `${statementLabels.total}\t\t${formatStatementNumber(calculations.totalUnits)}\t\t${formatStatementNumber(calculations.totalInterest)}`,
+    ...statementRowLines,
+    statementTotalLine,
     '',
     `${statementLabels.principal}\t${formatStatementNumber(calculations.principal)}`,
     `${statementLabels.interest}\t${formatSignedStatementNumber(calculations.totalInterest)}`,
@@ -1515,10 +1690,15 @@ export default function InterestCalculator() {
   ];
 
   const toggleSettingsSection = (sectionKey) => {
-    setExpandedSettingsSections((currentSections) => ({
-      ...currentSections,
-      [sectionKey]: !currentSections[sectionKey]
-    }));
+    setExpandedSettingsSections((currentSections) => {
+      const nextExpandedValue = !currentSections[sectionKey];
+
+      return Object.keys(currentSections).reduce((nextSections, currentKey) => {
+        nextSections[currentKey] =
+          currentKey === sectionKey ? nextExpandedValue : false;
+        return nextSections;
+      }, {});
+    });
   };
 
   const statementImageCopyLabel =
@@ -1537,14 +1717,18 @@ export default function InterestCalculator() {
           : cloudSyncState === 'link-sent'
             ? cloudText.linkSent
             : cloudSyncState === 'error'
-              ? cloudText.syncIssue
+              ? cloudUser
+                ? cloudText.syncIssue
+                : cloudText.localOnly
               : cloudText.localOnly;
   const cloudStatusClassName =
     cloudSyncState === 'online'
       ? 'status-saved'
-      : cloudSyncState === 'error'
-        ? 'status-draft'
-        : 'status-current';
+      : cloudSyncState === 'syncing' ||
+          cloudSyncState === 'sending' ||
+          cloudSyncState === 'link-sent'
+        ? 'status-current'
+        : 'status-alert';
 
   return (
     <div className="calculator-page">
@@ -1582,9 +1766,13 @@ export default function InterestCalculator() {
               <div className="sidebar-topbar">
                 <div className="sidebar-brand">
                   <div className="sidebar-brand-icon">
-                    <img src="/favicon.svg" alt="" className="app-logo-image" />
+                    <SidebarDmasLogo className="sidebar-dmas-logo" />
                   </div>
-                  {!isSidebarCollapsed && <span>{siteText.sidebarBrand}</span>}
+                  {!isSidebarCollapsed && (
+                    <span className="sidebar-text-reveal sidebar-brand-label">
+                      {siteText.sidebarBrand}
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -1605,11 +1793,15 @@ export default function InterestCalculator() {
                 aria-label={siteText.createNewBill}
               >
                 <Plus size={16} />
-                {!isSidebarCollapsed && <span>{siteText.newBill}</span>}
+                {!isSidebarCollapsed && (
+                  <span className="sidebar-text-reveal sidebar-action-label">
+                    {siteText.newBill}
+                  </span>
+                )}
               </button>
 
               {!isSidebarCollapsed && (
-                <div className="sidebar-panel-header">
+                <div className="sidebar-panel-header sidebar-block-reveal">
                   <span className="sidebar-kicker">{siteText.savedBillsSection}</span>
                   <h2 className="section-title">{siteText.yourBills}</h2>
                   <p className="sidebar-note">{siteText.savedBillsHelp}</p>
@@ -1618,16 +1810,28 @@ export default function InterestCalculator() {
 
               <nav className="sidebar-sections" aria-label={siteText.savedBills}>
                 {!isSidebarCollapsed && (
-                  <div className="sidebar-section-heading">
+                  <div className="sidebar-section-heading sidebar-block-reveal">
                     <span>{siteText.savedBills}</span>
                     <span className="saved-bills-count">{savedBills.length}</span>
                   </div>
                 )}
 
                 {!storageReady ? (
-                  <div className="empty-state">{siteText.loadingSavedBills}</div>
+                  <div
+                    className={`empty-state ${isSidebarCollapsed ? 'empty-state-compact' : ''}`}
+                    title={siteText.loadingSavedBills}
+                    aria-label={siteText.loadingSavedBills}
+                  >
+                    {isSidebarCollapsed ? <LoaderCircle size={16} /> : siteText.loadingSavedBills}
+                  </div>
                 ) : savedBills.length === 0 ? (
-                  <div className="empty-state">{siteText.noSavedBills}</div>
+                  <div
+                    className={`empty-state ${isSidebarCollapsed ? 'empty-state-compact' : ''}`}
+                    title={siteText.noSavedBills}
+                    aria-label={siteText.noSavedBills}
+                  >
+                    {isSidebarCollapsed ? <FileText size={16} /> : siteText.noSavedBills}
+                  </div>
                 ) : (
                   <div
                     className={`saved-bills-list ${isSidebarCollapsed ? 'is-collapsed' : ''}`}
@@ -1647,7 +1851,7 @@ export default function InterestCalculator() {
                             <FileText size={16} />
                           </span>
                           {!isSidebarCollapsed && (
-                            <span className="saved-bill-copy">
+                            <span className="saved-bill-copy sidebar-text-reveal">
                               <span className="saved-bill-title">{bill.name}</span>
                               <span className="saved-bill-meta">
                                 {formatStamp(bill.updatedAt)}
@@ -1674,76 +1878,100 @@ export default function InterestCalculator() {
 
               <div className="sidebar-footer">
                 {!isSidebarCollapsed && (
-                  <section className="sidebar-cloud-panel" aria-label={cloudText.sectionTitle}>
-                    <div className="sidebar-cloud-header">
-                      <div className="sidebar-cloud-title">
+                  <div className="sidebar-cloud-shell sidebar-block-reveal">
+                    <button
+                      type="button"
+                      className="sidebar-cloud-toggle"
+                      onClick={() =>
+                        setIsCloudPanelExpanded((currentValue) => !currentValue)
+                      }
+                      aria-expanded={isCloudPanelExpanded}
+                      aria-controls="sidebar-cloud-panel"
+                    >
+                      <span className="sidebar-cloud-toggle-main">
                         <Cloud size={16} />
                         <span>{cloudText.sectionTitle}</span>
-                      </div>
-                      <span className={`status-badge ${cloudStatusClassName}`}>
-                        {cloudStatusLabel}
                       </span>
-                    </div>
-
-                    {!isSupabaseConfigured ? (
-                      <p className="sidebar-cloud-note">{cloudText.setupNote}</p>
-                    ) : cloudUser ? (
-                      <>
-                        <p className="sidebar-cloud-note">{cloudText.signedInAs}</p>
-                        <div className="cloud-user-chip">{cloudUser.email}</div>
-                        <button
-                          type="button"
-                          className="ghost-button cloud-action-button"
-                          onClick={signOutCloudAccount}
-                        >
-                          <LogOut size={14} />
-                          <span>{cloudText.signOut}</span>
-                        </button>
-                      </>
-                    ) : (
-                      <div className="sidebar-cloud-form">
-                        <p className="sidebar-cloud-note">{cloudText.connectNote}</p>
-                        <label className="field-label sidebar-field-label" htmlFor="cloud-email">
-                          {cloudText.emailLabel}
-                        </label>
-                        <input
-                          id="cloud-email"
-                          type="email"
-                          value={cloudEmail}
-                          onChange={(event) => setCloudEmail(event.target.value)}
-                          placeholder={cloudText.emailPlaceholder}
-                          className="text-input sidebar-auth-input"
+                      <span className="sidebar-cloud-toggle-actions">
+                        <span className={`status-badge ${cloudStatusClassName}`}>
+                          {cloudStatusLabel}
+                        </span>
+                        <ChevronRight
+                          size={16}
+                          className={`sidebar-cloud-chevron ${
+                            isCloudPanelExpanded ? 'is-open' : ''
+                          }`}
                         />
-                        <button
-                          type="button"
-                          className="primary-button cloud-action-button"
-                          onClick={sendCloudMagicLink}
-                          disabled={cloudSyncState === 'sending' || !cloudEmail.trim()}
-                        >
-                          {cloudSyncState === 'sending' ? (
-                            <LoaderCircle size={15} className="cloud-loader" />
-                          ) : (
-                            <Cloud size={15} />
-                          )}
-                          <span>
-                            {cloudSyncState === 'sending'
-                              ? cloudText.sendingLink
-                              : cloudText.sendMagicLink}
-                          </span>
-                        </button>
-                        {cloudSyncState === 'link-sent' && (
-                          <p className="cloud-inline-message is-success">
-                            {cloudText.linkSent}
-                          </p>
+                      </span>
+                    </button>
+
+                    {isCloudPanelExpanded && (
+                      <section
+                        id="sidebar-cloud-panel"
+                        className="sidebar-cloud-panel"
+                        aria-label={cloudText.sectionTitle}
+                      >
+                        {!isSupabaseConfigured ? (
+                          <p className="sidebar-cloud-note">{cloudText.setupNote}</p>
+                        ) : cloudUser ? (
+                          <>
+                            <p className="sidebar-cloud-note">{cloudText.signedInAs}</p>
+                            <div className="cloud-user-chip">{cloudUser.email}</div>
+                            <button
+                              type="button"
+                              className="ghost-button cloud-action-button"
+                              onClick={signOutCloudAccount}
+                            >
+                              <LogOut size={14} />
+                              <span>{cloudText.signOut}</span>
+                            </button>
+                          </>
+                        ) : (
+                          <div className="sidebar-cloud-form">
+                            <p className="sidebar-cloud-note">{cloudText.connectNote}</p>
+                            <label className="field-label sidebar-field-label" htmlFor="cloud-email">
+                              {cloudText.emailLabel}
+                            </label>
+                            <input
+                              id="cloud-email"
+                              type="email"
+                              value={cloudEmail}
+                              onChange={(event) => setCloudEmail(event.target.value)}
+                              placeholder={cloudText.emailPlaceholder}
+                              className="text-input sidebar-auth-input"
+                            />
+                            <button
+                              type="button"
+                              className="primary-button cloud-action-button"
+                              onClick={sendCloudMagicLink}
+                              disabled={cloudSyncState === 'sending' || !cloudEmail.trim()}
+                            >
+                              {cloudSyncState === 'sending' ? (
+                                <LoaderCircle size={15} className="cloud-loader" />
+                              ) : (
+                                <Cloud size={15} />
+                              )}
+                              <span>
+                                {cloudSyncState === 'sending'
+                                  ? cloudText.sendingLink
+                                  : cloudText.sendMagicLink}
+                              </span>
+                            </button>
+                            {cloudSyncState === 'link-sent' && (
+                              <p className="cloud-inline-message is-success">
+                                {cloudText.linkSent}
+                              </p>
+                            )}
+                            {cloudSyncState === 'error' && (
+                              <p className="cloud-inline-message is-error">
+                                {cloudText.localOnlyNote}
+                              </p>
+                            )}
+                          </div>
                         )}
-                        {cloudSyncState === 'error' && (
-                          <p className="cloud-inline-message is-error">
-                            {cloudText.localOnlyNote}
-                          </p>
-                        )}
-                      </div>
+                      </section>
                     )}
-                  </section>
+                  </div>
                 )}
 
                 <div className="theme-menu-shell sidebar-settings-shell" ref={themeMenuRef}>
@@ -1755,7 +1983,11 @@ export default function InterestCalculator() {
                     aria-expanded={isThemeMenuOpen}
                   >
                     <Settings2 size={16} />
-                    {!isSidebarCollapsed && <span>{siteText.settings}</span>}
+                    {!isSidebarCollapsed && (
+                      <span className="sidebar-text-reveal sidebar-settings-label">
+                        {siteText.settings}
+                      </span>
+                    )}
                   </button>
 
                   {isThemeMenuOpen && (
@@ -2025,7 +2257,11 @@ export default function InterestCalculator() {
                 </div>
                 <div className="bill-meta-item">
                   <span className="bill-meta-label">{siteText.status}</span>
-                  <span className={`status-badge ${hasUnsavedChanges ? 'status-draft' : 'status-saved'}`}>
+                  <span
+                    className={`status-badge bill-meta-status-value ${
+                      hasUnsavedChanges ? 'status-draft' : 'status-saved'
+                    }`}
+                  >
                     {hasUnsavedChanges ? siteText.unsavedChanges : siteText.saved}
                   </span>
                 </div>
@@ -2033,21 +2269,44 @@ export default function InterestCalculator() {
             </section>
 
             <section className="panel">
-              <label className="field-label" htmlFor="end-date">
-                {siteText.endDate}
-              </label>
-              <input
-                id="end-date"
-                type="text"
-                value={endDate}
-                onChange={(event) => setEndDate(event.target.value)}
-                placeholder={siteText.endDatePlaceholder}
-                className="text-input date-input"
-              />
+              <div className="end-date-header">
+                <label className="field-label field-label-inline" htmlFor="end-date">
+                  {siteText.endDate}
+                </label>
+                <label className="inline-toggle" htmlFor="row-end-dates-toggle">
+                  <input
+                    id="row-end-dates-toggle"
+                    type="checkbox"
+                    checked={useEntryEndDates}
+                    onChange={(event) => setUseEntryEndDates(event.target.checked)}
+                  />
+                  <span className="inline-toggle-track" aria-hidden="true">
+                    <span className="inline-toggle-thumb" />
+                  </span>
+                  <span className="inline-toggle-text">
+                    {rowEndDateText.toggleLabel}
+                  </span>
+                </label>
+              </div>
+
+              {useEntryEndDates ? (
+                <p className="section-note">
+                  {rowEndDateText.note}
+                </p>
+              ) : (
+                <input
+                  id="end-date"
+                  type="text"
+                  value={endDate}
+                  onChange={(event) => setEndDate(event.target.value)}
+                  placeholder={siteText.endDatePlaceholder}
+                  className="text-input date-input"
+                />
+              )}
             </section>
 
             <section className="panel">
-              <div className="section-header">
+              <div className="section-header entries-section-header">
                 <div className="entries-title-group">
                   <h2 className="section-title">{siteText.entries}</h2>
                   <div className="info-tooltip">
@@ -2055,12 +2314,12 @@ export default function InterestCalculator() {
                       type="button"
                       className="info-icon-button"
                       aria-label={siteText.entriesInfoLabel}
-                      title={siteText.entriesInfoText}
+                      title={entriesInfoText}
                     >
                       <CircleHelp size={16} />
                     </button>
                     <div className="info-tooltip-content" role="tooltip">
-                      {siteText.entriesInfoText}
+                      {entriesInfoText}
                     </div>
                   </div>
                 </div>
@@ -2079,8 +2338,9 @@ export default function InterestCalculator() {
                   <thead>
                     <tr>
                       <th>{siteText.date}</th>
-                      <th>{siteText.amountUnits}</th>
-                      <th>
+                      {useEntryEndDates && <th>{rowEndDateText.columnLabel}</th>}
+                      <th className="number-heading">{siteText.amountUnits}</th>
+                      <th className="number-heading">
                         <span className="entry-table-heading">
                           <span>{siteText.daily}</span>
                           <button
@@ -2098,7 +2358,7 @@ export default function InterestCalculator() {
                           </button>
                         </span>
                       </th>
-                      <th>
+                      <th className="number-heading">
                         <span className="entry-table-heading">
                           <span>{siteText.days}</span>
                           <button
@@ -2116,8 +2376,8 @@ export default function InterestCalculator() {
                           </button>
                         </span>
                       </th>
-                      <th>{siteText.dailyTimesDays}</th>
-                      <th>{siteText.interest}</th>
+                      <th className="number-heading">{siteText.dailyTimesDays}</th>
+                      <th className="number-heading">{siteText.interest}</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -2138,6 +2398,19 @@ export default function InterestCalculator() {
                               className="table-input"
                             />
                           </td>
+                          {useEntryEndDates && (
+                            <td>
+                              <input
+                                type="text"
+                                value={entry.endDate}
+                                onChange={(event) =>
+                                  updateEntry(entry.id, 'endDate', event.target.value)
+                                }
+                                placeholder="DD-MM"
+                                className="table-input"
+                              />
+                            </td>
+                          )}
                           <td>
                             <input
                               type="number"
@@ -2183,7 +2456,12 @@ export default function InterestCalculator() {
                                 }
                                 placeholder={
                                   entry.date
-                                    ? formatNumber(calculateDays(entry.date, endDate))
+                                    ? formatNumber(
+                                        calculateDays(
+                                          entry.date,
+                                          useEntryEndDates ? entry.endDate : endDate
+                                        )
+                                      )
                                     : siteText.auto
                                 }
                                 className="table-input table-input-number"
@@ -2369,7 +2647,10 @@ export default function InterestCalculator() {
                           <tr key={row.id}>
                             <td className="statement-cell-left">{row.serial}</td>
                             <td className="statement-cell-left">{row.date}</td>
-                            <td className="statement-cell-left">
+                            {statementHasEndDateColumn && (
+                              <td className="statement-cell-left">{row.resolvedEndDate}</td>
+                            )}
+                            <td className="statement-cell-right">
                               {formatStatementNumber(row.amount)}
                             </td>
                             <td className="statement-cell-right">
@@ -2383,11 +2664,11 @@ export default function InterestCalculator() {
                         <tr className="statement-total-row">
                           <td
                             className="statement-total-label statement-cell-left"
-                            colSpan="2"
+                            colSpan={statementHasEndDateColumn ? 3 : 2}
                           >
                             {statementLabels.total}
                           </td>
-                          <td className="statement-cell-left">
+                          <td className="statement-cell-right">
                             {formatStatementNumber(calculations.totalUnits)}
                           </td>
                           <td className="statement-cell-right"></td>
