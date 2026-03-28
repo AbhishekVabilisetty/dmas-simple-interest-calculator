@@ -730,37 +730,57 @@ const formatDateInputValue = (value) => {
     return '';
   }
 
-  const normalizedSeparators = value
-    .replace(/[^\d]+/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+/g, '-');
+  const normalizedInput = value.replace(/[^\d]+/g, '-').replace(/^-+/, '').replace(/-+/g, '-');
+  const rawGroups = normalizedInput
+    .split('-')
+    .map((group) => group.replace(/\D/g, ''))
+    .filter((group) => group.length > 0);
+  const digits = normalizedInput.replace(/\D/g, '').slice(0, 8);
 
-  if (normalizedSeparators.includes('-')) {
-    const rawParts = normalizedSeparators.split('-').slice(0, 3);
-    const limitedParts = [
-      (rawParts[0] ?? '').replace(/\D/g, '').slice(0, 2),
-      (rawParts[1] ?? '').replace(/\D/g, '').slice(0, 2),
-      (rawParts[2] ?? '').replace(/\D/g, '').slice(0, 4)
-    ];
-    const endsWithHyphen = normalizedSeparators.endsWith('-');
-    let formatted = limitedParts[0];
+  if (normalizedInput.includes('-') && rawGroups.length > 0) {
+    const capacities = [2, 2, 4];
+    const buckets = ['', '', ''];
+    let bucketIndex = 0;
 
-    if (rawParts.length > 1) {
-      formatted += `-${limitedParts[1]}`;
+    rawGroups.forEach((group) => {
+      let remaining = group;
+
+      while (remaining && bucketIndex < buckets.length) {
+        const available = capacities[bucketIndex] - buckets[bucketIndex].length;
+        if (available <= 0) {
+          bucketIndex += 1;
+          continue;
+        }
+
+        buckets[bucketIndex] += remaining.slice(0, available);
+        remaining = remaining.slice(available);
+
+        if (!remaining) {
+          bucketIndex += 1;
+        }
+      }
+    });
+
+    let formatted = buckets[0];
+
+    if (rawGroups.length > 1 || buckets[1]) {
+      formatted += `-${buckets[1]}`;
     }
 
-    if (rawParts.length > 2) {
-      formatted += `-${limitedParts[2]}`;
+    if (rawGroups.length > 2 || buckets[2]) {
+      formatted += `-${buckets[2]}`;
     }
 
-    if (endsWithHyphen && rawParts.length < 4 && !formatted.endsWith('-')) {
+    if (
+      normalizedInput.endsWith('-') &&
+      !formatted.endsWith('-') &&
+      rawGroups.length < 3
+    ) {
       formatted += '-';
     }
 
     return formatted;
   }
-
-  const digits = normalizedSeparators.replace(/\D/g, '').slice(0, 8);
 
   if (digits.length <= 2) {
     return digits;
