@@ -1317,6 +1317,19 @@ export default function InterestCalculator() {
     return Boolean(buildValidatedDate(dateParts, fallbackYear));
   };
 
+  const hasEndDateBeforeStartDate = (startDate, finalDate) => {
+    if (!startDate?.trim() || !finalDate?.trim()) {
+      return false;
+    }
+
+    const { start, end } = resolveDateRange(startDate, finalDate);
+    if (!start || !end) {
+      return false;
+    }
+
+    return end < start;
+  };
+
   const calculateDays = (startDate, finalDate) => {
     const { start, end } = resolveDateRange(startDate, finalDate);
 
@@ -1527,6 +1540,16 @@ export default function InterestCalculator() {
     persistBills([newBill, ...savedBills]);
   };
 
+  const autoSaveBillBeforeCopy = () => {
+    if (isDraftEmpty) {
+      return;
+    }
+
+    if (!activeSavedBill || hasUnsavedChanges) {
+      saveBill();
+    }
+  };
+
   const startNewBill = () => {
     if (
       hasUnsavedChanges &&
@@ -1673,9 +1696,21 @@ export default function InterestCalculator() {
   const resolvedThemeLabel = resolvedTheme === 'dark' ? siteText.dark : siteText.light;
   const invalidDateLabel =
     siteText.invalidDate ?? (siteLanguage === 'te' ? 'చెల్లని తేదీ' : 'Invalid date');
+  const endBeforeStartLabel =
+    siteLanguage === 'te'
+      ? 'ముగింపు తేదీ ప్రారంభ తేదీ కంటే ముందుంది'
+      : 'End date is before start date';
+  const globalEndBeforeStartLabel =
+    siteLanguage === 'te'
+      ? 'ఒకటి లేదా ఎక్కువ ప్రారంభ తేదీల కంటే ముగింపు తేదీ ముందుంది'
+      : 'End date is before one or more start dates';
   const globalEndDateError =
-    !useEntryEndDates && endDate.trim() && !isDateInputValid(endDate)
-      ? invalidDateLabel
+    !useEntryEndDates && endDate.trim()
+      ? !isDateInputValid(endDate)
+        ? invalidDateLabel
+        : entries.some((entry) => hasEndDateBeforeStartDate(entry.date, endDate))
+          ? globalEndBeforeStartLabel
+          : ''
       : '';
   const statementLabels =
     STATEMENT_LABELS[normalizeStatementLanguage(statementLanguage)];
@@ -1713,6 +1748,7 @@ export default function InterestCalculator() {
   ].join('\n');
 
   const copyStatementText = async () => {
+    autoSaveBillBeforeCopy();
     await navigator.clipboard.writeText(statementText);
   };
 
@@ -1737,6 +1773,7 @@ export default function InterestCalculator() {
     }
 
     try {
+      autoSaveBillBeforeCopy();
       const blob = await toBlob(statementSheetRef.current, {
         cacheBust: true,
         pixelRatio: 2,
@@ -2506,9 +2543,11 @@ export default function InterestCalculator() {
                       const rowEndDateError =
                         useEntryEndDates &&
                         entry.endDate.trim() &&
-                        !isDateInputValid(entry.endDate, 'end', entry.date)
+                        (!isDateInputValid(entry.endDate, 'end', entry.date)
                           ? invalidDateLabel
-                          : '';
+                          : hasEndDateBeforeStartDate(entry.date, entry.endDate)
+                            ? endBeforeStartLabel
+                            : '');
 
                       return (
                         <tr key={entry.id}>
