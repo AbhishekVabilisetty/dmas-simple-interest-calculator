@@ -725,6 +725,54 @@ const createFallbackBillName = (prefix = 'Bill') => {
   return `${prefix} ${stamp}`;
 };
 
+const formatDateInputValue = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const normalizedSeparators = value
+    .replace(/[^\d]+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+/g, '-');
+
+  if (normalizedSeparators.includes('-')) {
+    const rawParts = normalizedSeparators.split('-').slice(0, 3);
+    const limitedParts = [
+      (rawParts[0] ?? '').replace(/\D/g, '').slice(0, 2),
+      (rawParts[1] ?? '').replace(/\D/g, '').slice(0, 2),
+      (rawParts[2] ?? '').replace(/\D/g, '').slice(0, 4)
+    ];
+    const endsWithHyphen = normalizedSeparators.endsWith('-');
+    let formatted = limitedParts[0];
+
+    if (rawParts.length > 1) {
+      formatted += `-${limitedParts[1]}`;
+    }
+
+    if (rawParts.length > 2) {
+      formatted += `-${limitedParts[2]}`;
+    }
+
+    if (endsWithHyphen && rawParts.length < 4 && !formatted.endsWith('-')) {
+      formatted += '-';
+    }
+
+    return formatted;
+  }
+
+  const digits = normalizedSeparators.replace(/\D/g, '').slice(0, 8);
+
+  if (digits.length <= 2) {
+    return digits;
+  }
+
+  if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+  }
+
+  return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4, 8)}`;
+};
+
 export default function InterestCalculator() {
   const [siteLanguage, setSiteLanguage] = useState(getSavedSiteLanguage);
   const [billName, setBillName] = useState('');
@@ -761,10 +809,12 @@ export default function InterestCalculator() {
   const [isDaysColumnEditable, setIsDaysColumnEditable] = useState(false);
   const [isEditorOpening, setIsEditorOpening] = useState(false);
   const [statementImageCopyState, setStatementImageCopyState] = useState('idle');
+  const [copyAutoSaveToastVisible, setCopyAutoSaveToastVisible] = useState(false);
   const themeMenuRef = useRef(null);
   const mainColumnRef = useRef(null);
   const statementSheetRef = useRef(null);
   const statementImageCopyTimeoutRef = useRef(null);
+  const copyAutoSaveToastTimeoutRef = useRef(null);
   const editorOpenTimeoutRef = useRef(null);
   const normalizedSiteLanguage = normalizeSiteLanguage(siteLanguage);
   const siteText = SITE_TEXT[normalizedSiteLanguage];
@@ -1542,12 +1592,24 @@ export default function InterestCalculator() {
 
   const autoSaveBillBeforeCopy = () => {
     if (isDraftEmpty) {
-      return;
+      return false;
     }
 
-    if (!activeSavedBill || hasUnsavedChanges) {
-      saveBill();
+    saveBill();
+    return true;
+  };
+
+  const showCopyAutoSaveToast = () => {
+    setCopyAutoSaveToastVisible(true);
+
+    if (copyAutoSaveToastTimeoutRef.current) {
+      window.clearTimeout(copyAutoSaveToastTimeoutRef.current);
     }
+
+    copyAutoSaveToastTimeoutRef.current = window.setTimeout(() => {
+      setCopyAutoSaveToastVisible(false);
+      copyAutoSaveToastTimeoutRef.current = null;
+    }, 1000);
   };
 
   const startNewBill = () => {
@@ -1712,6 +1774,8 @@ export default function InterestCalculator() {
           ? globalEndBeforeStartLabel
           : ''
       : '';
+  const autoSavedToastLabel =
+    siteLanguage === 'te' ? 'ఆటో-సేవ్ అయింది' : 'Auto-saved';
   const statementLabels =
     STATEMENT_LABELS[normalizeStatementLanguage(statementLanguage)];
   const statementTitle = statementTitleDate
@@ -1748,8 +1812,11 @@ export default function InterestCalculator() {
   ].join('\n');
 
   const copyStatementText = async () => {
-    autoSaveBillBeforeCopy();
+    const didAutoSave = autoSaveBillBeforeCopy();
     await navigator.clipboard.writeText(statementText);
+    if (didAutoSave) {
+      showCopyAutoSaveToast();
+    }
   };
 
   const setStatementImageCopyFeedback = (nextState) => {
@@ -1773,7 +1840,7 @@ export default function InterestCalculator() {
     }
 
     try {
-      autoSaveBillBeforeCopy();
+      const didAutoSave = autoSaveBillBeforeCopy();
       const blob = await toBlob(statementSheetRef.current, {
         cacheBust: true,
         pixelRatio: 2,
@@ -1801,6 +1868,9 @@ export default function InterestCalculator() {
       ]);
 
       setStatementImageCopyFeedback('copied');
+      if (didAutoSave) {
+        showCopyAutoSaveToast();
+      }
     } catch (error) {
       console.error('Unable to copy statement image:', error);
       setStatementImageCopyFeedback('failed');
@@ -2441,7 +2511,7 @@ export default function InterestCalculator() {
                     id="end-date"
                     type="text"
                     value={endDate}
-                    onChange={(event) => setEndDate(event.target.value)}
+                    onChange={(event) => setEndDate(formatDateInputValue(event.target.value))}
                     placeholder={siteText.endDatePlaceholder}
                     className={`text-input date-input ${globalEndDateError ? 'is-invalid' : ''}`}
                   />
@@ -2557,7 +2627,11 @@ export default function InterestCalculator() {
                                 type="text"
                                 value={entry.date}
                                 onChange={(event) =>
-                                  updateEntry(entry.id, 'date', event.target.value)
+                                  updateEntry(
+                                    entry.id,
+                                    'date',
+                                    formatDateInputValue(event.target.value)
+                                  )
                                 }
                                 placeholder="DD-MM"
                                 className={`table-input ${rowDateError ? 'is-invalid' : ''}`}
@@ -2576,7 +2650,11 @@ export default function InterestCalculator() {
                                   type="text"
                                   value={entry.endDate}
                                   onChange={(event) =>
-                                    updateEntry(entry.id, 'endDate', event.target.value)
+                                    updateEntry(
+                                      entry.id,
+                                      'endDate',
+                                      formatDateInputValue(event.target.value)
+                                    )
                                   }
                                   placeholder="DD-MM"
                                   className={`table-input ${rowEndDateError ? 'is-invalid' : ''}`}
@@ -2773,7 +2851,12 @@ export default function InterestCalculator() {
               </section>
             </div>
 
-            <section className="panel">
+            <section className="panel statement-panel">
+              {copyAutoSaveToastVisible && (
+                <div className="statement-auto-save-toast" role="status" aria-live="polite">
+                  {autoSavedToastLabel}
+                </div>
+              )}
               <div className="section-header statement-header">
                 <div>
                   <h2 className="section-title">{siteText.statementOutput}</h2>

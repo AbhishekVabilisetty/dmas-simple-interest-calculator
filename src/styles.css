@@ -1631,6 +1631,25 @@ button {
   align-items: flex-start;
 }
 
+.statement-panel {
+  position: relative;
+}
+
+.statement-auto-save-toast {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  z-index: 2;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--success-border);
+  background: var(--success-bg);
+  color: var(--success-text);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .statement-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1882,6 +1901,11 @@ button {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .statement-auto-save-toast {
+    top: 16px;
+    right: 16px;
   }
 
   .statement-image-copy-button {
