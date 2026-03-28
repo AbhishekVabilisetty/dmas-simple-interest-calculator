@@ -1,0 +1,23 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="64"
+  height="64"
+  viewBox="0 0 64 64"
+  fill="none"
+>
+  <circle cx="32" cy="32" r="28" fill="#F7FBFF" />
+  <circle cx="32" cy="32" r="27" stroke="#C8D8EA" stroke-width="2" />
+  <circle cx="32" cy="32" r="23" fill="#EEF5FB" />
+
+  <g
+    fill="#111111"
+    font-family="'Times New Roman', Georgia, serif"
+    font-weight="700"
+    text-anchor="middle"
+  >
+    <text x="32" y="20" font-size="14">&#247;</text>
+    <text x="32" y="30" font-size="14">&#215;</text>
+    <text x="32" y="40" font-size="14">+</text>
+    <text x="32" y="50" font-size="15">&#8722;</text>
+  </g>
+</svg>

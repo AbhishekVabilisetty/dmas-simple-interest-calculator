@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://dmas-simple-interest-calculator.vercel.app/sitemap.xml
