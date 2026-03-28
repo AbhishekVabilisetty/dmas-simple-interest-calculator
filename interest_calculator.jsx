@@ -1162,21 +1162,7 @@ export default function InterestCalculator() {
     return new Date().getFullYear();
   };
 
-  const getExplicitYear = (dateStr) => {
-    if (!dateStr) {
-      return null;
-    }
-
-    const parts = dateStr.split('-').map((part) => part.trim());
-    if (parts.length !== 3) {
-      return null;
-    }
-
-    const parsedYear = Number.parseInt(parts[2], 10);
-    return Number.isNaN(parsedYear) ? null : parsedYear;
-  };
-
-  const parseDate = (dateStr, fallbackYear = getDefaultYear()) => {
+  const parseDateParts = (dateStr) => {
     if (!dateStr) {
       return null;
     }
@@ -1188,11 +1174,22 @@ export default function InterestCalculator() {
       const parsedDay = Number.parseInt(day, 10);
       const parsedMonth = Number.parseInt(month, 10);
 
-      if (Number.isNaN(parsedDay) || Number.isNaN(parsedMonth)) {
+      if (
+        Number.isNaN(parsedDay) ||
+        Number.isNaN(parsedMonth) ||
+        parsedDay < 1 ||
+        parsedMonth < 1 ||
+        parsedMonth > 12
+      ) {
         return null;
       }
 
-      return new Date(fallbackYear, parsedMonth - 1, parsedDay);
+      return {
+        day: parsedDay,
+        month: parsedMonth,
+        year: null,
+        hasExplicitYear: false
+      };
     }
 
     if (parts.length === 3) {
@@ -1204,22 +1201,93 @@ export default function InterestCalculator() {
       if (
         Number.isNaN(parsedDay) ||
         Number.isNaN(parsedMonth) ||
-        Number.isNaN(parsedYear)
+        Number.isNaN(parsedYear) ||
+        parsedDay < 1 ||
+        parsedMonth < 1 ||
+        parsedMonth > 12
       ) {
         return null;
       }
 
-      return new Date(parsedYear, parsedMonth - 1, parsedDay);
+      return {
+        day: parsedDay,
+        month: parsedMonth,
+        year: parsedYear,
+        hasExplicitYear: true
+      };
     }
 
     return null;
   };
 
+  const buildValidatedDate = (dateParts, fallbackYear = getDefaultYear()) => {
+    if (!dateParts) {
+      return null;
+    }
+
+    const resolvedYear = dateParts.year ?? fallbackYear;
+    const date = new Date(Date.UTC(resolvedYear, dateParts.month - 1, dateParts.day));
+
+    if (
+      date.getUTCFullYear() !== resolvedYear ||
+      date.getUTCMonth() !== dateParts.month - 1 ||
+      date.getUTCDate() !== dateParts.day
+    ) {
+      return null;
+    }
+
+    return date;
+  };
+
+  const compareMonthDay = (leftDateParts, rightDateParts) => {
+    if (leftDateParts.month !== rightDateParts.month) {
+      return leftDateParts.month - rightDateParts.month;
+    }
+
+    return leftDateParts.day - rightDateParts.day;
+  };
+
+  const resolveDateRange = (startDate, finalDate) => {
+    const startParts = parseDateParts(startDate);
+    const endParts = parseDateParts(finalDate);
+
+    if (!startParts || !endParts) {
+      return { start: null, end: null };
+    }
+
+    const defaultYear = getDefaultYear();
+    let startYear = startParts.year;
+    let endYear = endParts.year;
+
+    if (startYear == null && endYear == null) {
+      startYear = defaultYear;
+      endYear = defaultYear;
+
+      if (compareMonthDay(endParts, startParts) < 0) {
+        endYear += 1;
+      }
+    } else if (startYear != null && endYear == null) {
+      endYear = startYear;
+
+      if (compareMonthDay(endParts, startParts) < 0) {
+        endYear += 1;
+      }
+    } else if (startYear == null && endYear != null) {
+      startYear = endYear;
+
+      if (compareMonthDay(startParts, endParts) > 0) {
+        startYear -= 1;
+      }
+    }
+
+    return {
+      start: buildValidatedDate(startParts, startYear),
+      end: buildValidatedDate(endParts, endYear)
+    };
+  };
+
   const calculateDays = (startDate, finalDate) => {
-    const fallbackYear =
-      getExplicitYear(finalDate) ?? getExplicitYear(startDate) ?? getDefaultYear();
-    const start = parseDate(startDate, fallbackYear);
-    const end = parseDate(finalDate, fallbackYear);
+    const { start, end } = resolveDateRange(startDate, finalDate);
 
     if (!start || !end) {
       return 0;
