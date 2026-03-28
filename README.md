@@ -7,7 +7,7 @@ DMAS Simple Interest Calculator is a React + Vite web app for preparing simple-i
 ## Live Release
 
 - Production site: https://dmas-simple-interest-calculator.vercel.app
-- Repository: https://github.com/AbhishekVabilisetty/temp
+- Repository: https://github.com/AbhishekVabilisetty/dmas-simple-interest-calculator
 
 ## Features
 

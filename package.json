@@ -6,7 +6,7 @@
   "homepage": "https://dmas-simple-interest-calculator.vercel.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AbhishekVabilisetty/temp.git"
+    "url": "https://github.com/AbhishekVabilisetty/dmas-simple-interest-calculator.git"
   },
   "scripts": {
     "dev": "vite",
