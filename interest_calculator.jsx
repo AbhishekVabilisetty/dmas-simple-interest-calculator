@@ -279,10 +279,10 @@ const SITE_TEXT = {
     globalDefault: 'అన్ని బిల్లులకు',
     thisBillOnly: 'ఈ బిల్లు మాత్రమే',
     units: 'యూనిట్లు',
-    principal: 'అసలు',
+    principal: 'తల్లి',
     daily: 'రోజువారీ',
     days: 'రోజులు',
-    interest: 'వడ్డీ',
+    interest: 'పిల్ల',
     subtotal: 'ఉపమొత్తం',
     roundOff: 'రిటర్న్',
     total: 'మొత్తం',
@@ -418,8 +418,8 @@ const STATEMENT_LABELS = {
     titleWithDate: (date) =>
       `\u0c24\u0c32\u0c4d\u0c32\u0c3f \u0c2a\u0c3f\u0c32\u0c4d\u0c32 (${date} \u0c35\u0c30\u0c15\u0c41)`,
     uptoDateLabel: '\u0c32\u0c46\u0c15\u0c4d\u0c15\u0c3f\u0c02\u0c1a\u0c3f\u0c28 \u0c24\u0c47\u0c26\u0c40 \u0c35\u0c30\u0c15\u0c41',
-    principal: '\u0c05\u0c38\u0c32\u0c41',
-    interest: '\u0c35\u0c21\u0c4d\u0c21\u0c40',
+    principal: '\u0c24\u0c32\u0c4d\u0c32\u0c3f',
+    interest: '\u0c2a\u0c3f\u0c32\u0c4d\u0c32',
     subtotal: '\u0c09\u0c2a\u0c2e\u0c4a\u0c24\u0c4d\u0c24\u0c02',
     roundOff: '\u0c30\u0c3f\u0c1f\u0c30\u0c4d\u0c28\u0c4d',
     total: '\u0c2e\u0c4a\u0c24\u0c4d\u0c24\u0c02'
