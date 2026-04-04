@@ -189,7 +189,7 @@ const SITE_TEXT = {
     days: 'Days',
     interest: 'Interest',
     subtotal: 'Subtotal',
-    roundOff: 'Round Off',
+    roundOff: 'Return',
     total: 'Total',
     calcRulePrincipal: 'Units x',
     calcRulePrincipalSuffix: '= Principal',
@@ -410,7 +410,7 @@ const STATEMENT_LABELS = {
     principal: 'Principal',
     interest: 'Interest',
     subtotal: 'Subtotal',
-    roundOff: 'Round Off',
+    roundOff: 'Return',
     total: 'Total'
   },
   te: {
