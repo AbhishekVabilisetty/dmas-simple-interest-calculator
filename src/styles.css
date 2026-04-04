@@ -1744,7 +1744,7 @@ button {
 .statement-table td,
 .statement-summary-table td {
   border: 2px solid var(--statement-grid);
-  padding: 8px 14px;
+  padding: 6px 12px;
   text-align: center;
   font-size: clamp(1rem, 1.45vw, 1.45rem);
   line-height: 1.05;
