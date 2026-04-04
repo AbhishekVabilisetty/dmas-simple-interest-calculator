@@ -2915,13 +2915,7 @@ export default function InterestCalculator() {
               <div className="statement-preview">
                 <div className="statement-card-shell">
                   <div className="statement-sheet" ref={statementSheetRef}>
-                    <h3
-                      className={`statement-title ${
-                        statementLanguage === 'te' ? 'statement-title-compact' : ''
-                      }`}
-                    >
-                      {statementTitle}
-                    </h3>
+                    <h3 className="statement-title">{statementTitle}</h3>
                     {statementTitleDate && (
                       <p className="statement-date-note">
                         {statementLabels.uptoDateLabel}: {statementTitleDate}

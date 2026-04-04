@@ -1713,14 +1713,10 @@ button {
 
 .statement-title {
   font-family: "Times New Roman", Times, Georgia, serif;
-  font-size: clamp(1.7rem, 3.2vw, 3rem);
+  font-size: clamp(1.45rem, 2.6vw, 2.35rem);
   font-weight: 400;
   margin-bottom: 20px;
   white-space: nowrap;
-}
-
-.statement-title.statement-title-compact {
-  font-size: clamp(1.45rem, 2.6vw, 2.35rem);
 }
 
 .statement-date-note {
