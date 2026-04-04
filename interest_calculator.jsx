@@ -47,6 +47,9 @@ const DEFAULT_CALC_RULES = {
 const DEFAULT_SITE_LANGUAGE = 'en';
 const DEFAULT_STATEMENT_LANGUAGE = 'te';
 
+const normalizeRoundingAdjustment = (value) =>
+  Math.max(0, Number.parseFloat(value) || 0);
+
 function MoneyStackLogo({ className = '' }) {
   return (
     <svg
@@ -687,7 +690,7 @@ const buildDraftSnapshot = ({
   name: billName.trim(),
   endDate,
   useEntryEndDates,
-  roundingAdjustment,
+  roundingAdjustment: normalizeRoundingAdjustment(roundingAdjustment),
   entries: serializeEntries(entries),
   billRuleMode,
   billCalcRules: billRuleMode === 'custom' ? sanitizeCalcRules(billCalcRules) : null,
@@ -1455,8 +1458,9 @@ export default function InterestCalculator() {
     const totalInterest = rows.reduce((sum, row) => sum + row.interest, 0);
     const principal = totalUnits * calcRules.principalMultiplier;
     const subtotal = principal + totalInterest;
-    const finalAmount = subtotal + roundingAdjustment;
-    const suggestedRounding = Math.round(subtotal / 1000) * 1000 - subtotal;
+    const safeRoundingAdjustment = normalizeRoundingAdjustment(roundingAdjustment);
+    const finalAmount = subtotal + safeRoundingAdjustment;
+    const suggestedRounding = Math.ceil(subtotal / 1000) * 1000 - subtotal;
 
     return {
       rows,
@@ -1552,7 +1556,7 @@ export default function InterestCalculator() {
     setEntries(normalizeEntriesForState(bill.entries));
     setEndDate(bill.endDate ?? '');
     setUseEntryEndDates(getBillUseEntryEndDates(bill));
-    setRoundingAdjustment(Number(bill.roundingAdjustment) || 0);
+    setRoundingAdjustment(normalizeRoundingAdjustment(bill.roundingAdjustment));
     const nextBillRuleMode = bill.billRuleMode === 'custom' ? 'custom' : 'global';
     setBillRuleMode(nextBillRuleMode);
     setBillCalcRules(
@@ -1576,7 +1580,7 @@ export default function InterestCalculator() {
       entries: serializeEntries(entries),
       endDate,
       useEntryEndDates,
-      roundingAdjustment,
+      roundingAdjustment: normalizeRoundingAdjustment(roundingAdjustment),
       billRuleMode,
       billCalcRules:
         billRuleMode === 'custom' ? sanitizeCalcRules(billCalcRules) : null,
@@ -2805,11 +2809,10 @@ export default function InterestCalculator() {
                     <input
                       id="rounding-adjustment"
                       type="number"
+                      min="0"
                       value={roundingAdjustment}
                       onChange={(event) =>
-                        setRoundingAdjustment(
-                          Number.parseFloat(event.target.value) || 0
-                        )
+                        setRoundingAdjustment(normalizeRoundingAdjustment(event.target.value))
                       }
                       className="text-input summary-input"
                     />
