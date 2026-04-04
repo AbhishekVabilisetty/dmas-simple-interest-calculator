@@ -406,6 +406,7 @@ const STATEMENT_LABELS = {
     title: 'Interest Calculation',
     titleWithDate: (date) => `Interest Calculation (Up to ${date})`,
     uptoDateLabel: 'Calculated up to',
+    totalSlipsLabel: 'Total no.of slips',
     principal: 'Principal',
     interest: 'Interest',
     subtotal: 'Subtotal',
@@ -418,6 +419,7 @@ const STATEMENT_LABELS = {
     titleWithDate: (date) =>
       `\u0c24\u0c32\u0c4d\u0c32\u0c3f \u0c2a\u0c3f\u0c32\u0c4d\u0c32 (${date} \u0c35\u0c30\u0c15\u0c41)`,
     uptoDateLabel: '\u0c32\u0c46\u0c15\u0c4d\u0c15\u0c3f\u0c02\u0c1a\u0c3f\u0c28 \u0c24\u0c47\u0c26\u0c40 \u0c35\u0c30\u0c15\u0c41',
+    totalSlipsLabel: '\u0c2e\u0c4a\u0c24\u0c4d\u0c24\u0c02 \u0c36\u0c3e\u0c32\u0c4d\u0c24\u0c40\u0c32\u0c41',
     principal: '\u0c24\u0c32\u0c4d\u0c32\u0c3f',
     interest: '\u0c2a\u0c3f\u0c32\u0c4d\u0c32',
     subtotal: '\u0c09\u0c2a\u0c2e\u0c4a\u0c24\u0c4d\u0c24\u0c02',
@@ -1806,6 +1808,7 @@ export default function InterestCalculator() {
     ...row,
     serial: index + 1
   }));
+  const statementSlipCount = statementRows.length;
   const statementRowLines = statementRows.map((row) =>
     statementHasEndDateColumn
       ? `${row.serial}\t${row.date}\t${row.resolvedEndDate}\t${formatStatementNumber(row.amount)}\t${formatStatementNumber(row.dailyInterest)}x${row.days}\t${formatStatementNumber(row.interest)}`
@@ -1820,6 +1823,7 @@ export default function InterestCalculator() {
     ...(statementTitleDate
       ? [`${statementLabels.uptoDateLabel}: ${statementTitleDate}`]
       : []),
+    `${statementLabels.totalSlipsLabel}: ${statementSlipCount}`,
     '',
     ...statementRowLines,
     statementTotalLine,
@@ -2921,6 +2925,9 @@ export default function InterestCalculator() {
                         {statementLabels.uptoDateLabel}: {statementTitleDate}
                       </p>
                     )}
+                    <p className="statement-slip-note">
+                      {statementLabels.totalSlipsLabel}: {statementSlipCount}
+                    </p>
 
                     <table className="statement-table">
                       <tbody>
