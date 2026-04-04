@@ -284,7 +284,7 @@ const SITE_TEXT = {
     days: 'రోజులు',
     interest: 'వడ్డీ',
     subtotal: 'ఉపమొత్తం',
-    roundOff: 'రౌండ్ ఆఫ్',
+    roundOff: 'రిటర్న్',
     total: 'మొత్తం',
     calcRulePrincipal: 'యూనిట్లు x',
     calcRulePrincipalSuffix: '= అసలు',
@@ -421,7 +421,7 @@ const STATEMENT_LABELS = {
     principal: '\u0c05\u0c38\u0c32\u0c41',
     interest: '\u0c35\u0c21\u0c4d\u0c21\u0c40',
     subtotal: '\u0c09\u0c2a\u0c2e\u0c4a\u0c24\u0c4d\u0c24\u0c02',
-    roundOff: '\u0c30\u0c4c\u0c02\u0c21\u0c4d \u0c06\u0c2b\u0c4d',
+    roundOff: '\u0c30\u0c3f\u0c1f\u0c30\u0c4d\u0c28\u0c4d',
     total: '\u0c2e\u0c4a\u0c24\u0c4d\u0c24\u0c02'
   }
 };
