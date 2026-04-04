@@ -718,16 +718,20 @@ const formatStamp = (value) => {
   }).format(new Date(value));
 };
 
-const createFallbackBillName = (prefix = 'Bill') => {
+const createFallbackBillName = ({ principalAmount = 0, timestamp = new Date() } = {}) => {
+  const formattedPrincipal = new Intl.NumberFormat('en-IN', {
+    maximumFractionDigits: 0
+  }).format(Number(principalAmount) || 0);
+
   const stamp = new Intl.DateTimeFormat('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  }).format(new Date());
+  }).format(new Date(timestamp));
 
-  return `${prefix} ${stamp}`;
+  return `${formattedPrincipal} | ${stamp}`;
 };
 
 const formatDateInputValue = (value) => {
@@ -1574,7 +1578,11 @@ export default function InterestCalculator() {
   const saveBill = ({ asCopy = false } = {}) => {
     const now = new Date().toISOString();
     const normalizedName =
-      billName.trim() || createFallbackBillName(siteText.billPrefix);
+      billName.trim() ||
+      createFallbackBillName({
+        principalAmount: calculations.principal,
+        timestamp: now
+      });
     const nextDraft = {
       name: normalizedName,
       entries: serializeEntries(entries),
