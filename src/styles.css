@@ -1713,7 +1713,7 @@ button {
 
 .statement-title {
   font-family: "Times New Roman", Times, Georgia, serif;
-  font-size: clamp(1.45rem, 2.6vw, 2.35rem);
+  font-size: clamp(1.25rem, 2.2vw, 1.95rem);
   font-weight: 400;
   margin-bottom: 20px;
   white-space: nowrap;
@@ -1747,7 +1747,7 @@ button {
 .statement-table td,
 .statement-summary-table td {
   border: 2px solid var(--statement-grid);
-  padding: 4px 10px;
+  padding: 3px 8px;
   text-align: center;
   font-size: clamp(1rem, 1.45vw, 1.45rem);
   line-height: 1.05;
